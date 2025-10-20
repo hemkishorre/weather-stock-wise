@@ -1,5 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Cloud, CloudRain, Sun, Wind, Droplets, ThermometerSun } from "lucide-react";
+import { Cloud, CloudRain, Sun, Wind, Droplets, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface WeatherData {
   temp: number;
@@ -17,20 +20,58 @@ const weatherIcons = {
 };
 
 const WeatherCard = () => {
-  // Mock data - in production this would come from an API
-  const forecast: WeatherData[] = [
-    { temp: 24, condition: "sunny", humidity: 65, windSpeed: 12, precipitation: 10 },
-    { temp: 22, condition: "cloudy", humidity: 72, windSpeed: 15, precipitation: 40 },
-    { temp: 19, condition: "rainy", humidity: 85, windSpeed: 20, precipitation: 80 },
-  ];
+  const [forecast, setForecast] = useState<WeatherData[]>([]);
+  const [location, setLocation] = useState<string>("London");
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    fetchWeather();
+  }, []);
+
+  const fetchWeather = async () => {
+    try {
+      setIsLoading(true);
+      const { data, error } = await supabase.functions.invoke('fetch-weather', {
+        body: { location },
+      });
+
+      if (error) throw error;
+
+      if (data && data.forecast) {
+        setForecast(data.forecast);
+        setLocation(data.location);
+      }
+    } catch (error) {
+      console.error('Error fetching weather:', error);
+      toast.error("Failed to fetch weather data");
+      // Fallback to mock data
+      setForecast([
+        { temp: 24, condition: "sunny", humidity: 65, windSpeed: 12, precipitation: 10 },
+        { temp: 22, condition: "cloudy", humidity: 72, windSpeed: 15, precipitation: 40 },
+        { temp: 19, condition: "rainy", humidity: 85, windSpeed: 20, precipitation: 80 },
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const days = ["Today", "Tomorrow", "Day After"];
+
+  if (isLoading) {
+    return (
+      <section className="container mx-auto px-4 py-16">
+        <div className="max-w-6xl mx-auto flex items-center justify-center py-20">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="container mx-auto px-4 py-16">
       <div className="max-w-6xl mx-auto space-y-6">
         <div className="text-center space-y-2">
-          <h2 className="text-3xl md:text-4xl font-bold">Weather Forecast</h2>
+          <h2 className="text-3xl md:text-4xl font-bold">Weather Forecast - {location}</h2>
           <p className="text-muted-foreground">
             Plan your inventory based on upcoming weather conditions
           </p>

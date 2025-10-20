@@ -1,8 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { Cloud, TrendingUp, Package, Bell } from "lucide-react";
 import heroBg from "@/assets/hero-bg.jpg";
+import { useNavigate } from "react-router-dom";
 
 const Hero = () => {
+  const navigate = useNavigate();
+
   return (
     <section className="relative min-h-[90vh] flex items-center overflow-hidden">
       {/* Background with gradient mesh */}
@@ -41,10 +44,10 @@ const Hero = () => {
           
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4">
-            <Button variant="hero" size="lg" className="min-w-[200px]">
+            <Button variant="hero" size="lg" className="min-w-[200px]" onClick={() => navigate("/auth")}>
               Get Started Free
             </Button>
-            <Button variant="outline" size="lg" className="min-w-[200px]">
+            <Button variant="outline" size="lg" className="min-w-[200px]" onClick={() => window.scrollTo({ top: 800, behavior: 'smooth' })}>
               View Demo
             </Button>
           </div>
