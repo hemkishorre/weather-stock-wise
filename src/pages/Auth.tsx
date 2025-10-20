@@ -6,8 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
-import { Cloud, Loader2 } from "lucide-react";
+import { Cloud, Loader2, ShoppingCart, Store } from "lucide-react";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -15,6 +16,7 @@ const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
+  const [role, setRole] = useState<"vendor" | "wholesaler">("vendor");
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,6 +37,20 @@ const Auth = () => {
       if (error) throw error;
 
       if (data.user) {
+        // Insert user role
+        const { error: roleError } = await supabase
+          .from('user_roles')
+          .insert({ user_id: data.user.id, role });
+
+        if (roleError) throw roleError;
+
+        // If vendor, create default preferences
+        if (role === 'vendor') {
+          await supabase
+            .from('vendor_preferences')
+            .insert({ user_id: data.user.id, location: 'London' });
+        }
+
         toast.success("Account created successfully!");
         navigate("/");
       }
@@ -161,6 +177,31 @@ const Auth = () => {
                     required
                     minLength={6}
                   />
+                </div>
+                <div className="space-y-3">
+                  <Label>I am a:</Label>
+                  <RadioGroup value={role} onValueChange={(value: "vendor" | "wholesaler") => setRole(value)}>
+                    <div className="flex items-center space-x-2 p-3 rounded-lg border hover:border-primary transition-colors">
+                      <RadioGroupItem value="vendor" id="vendor" />
+                      <Label htmlFor="vendor" className="flex items-center gap-2 cursor-pointer flex-1">
+                        <ShoppingCart className="w-4 h-4 text-primary" />
+                        <div>
+                          <div className="font-medium">Vendor</div>
+                          <div className="text-xs text-muted-foreground">I need to order supplies</div>
+                        </div>
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2 p-3 rounded-lg border hover:border-primary transition-colors">
+                      <RadioGroupItem value="wholesaler" id="wholesaler" />
+                      <Label htmlFor="wholesaler" className="flex items-center gap-2 cursor-pointer flex-1">
+                        <Store className="w-4 h-4 text-secondary" />
+                        <div>
+                          <div className="font-medium">Wholesaler</div>
+                          <div className="text-xs text-muted-foreground">I supply goods to vendors</div>
+                        </div>
+                      </Label>
+                    </div>
+                  </RadioGroup>
                 </div>
                 <Button type="submit" variant="secondary" className="w-full" disabled={isLoading}>
                   {isLoading ? (
