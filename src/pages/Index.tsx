@@ -30,7 +30,7 @@ const Index = () => {
           .from('user_roles')
           .select('role')
           .eq('user_id', session.user.id)
-          .single();
+          .maybeSingle();
         
         setUserRole(roleData?.role || null);
       }

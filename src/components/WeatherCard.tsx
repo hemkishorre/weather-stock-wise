@@ -102,6 +102,8 @@ const WeatherCard = () => {
           .upsert({ 
             user_id: user.id, 
             location: newLocation.trim() 
+          }, {
+            onConflict: 'user_id'
           });
 
         if (error) throw error;

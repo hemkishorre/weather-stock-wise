@@ -45,23 +45,6 @@ const Navbar = () => {
             <span className="text-xl font-bold">SupplySync</span>
           </div>
 
-          {/* Desktop Navigation */}
-          {user && (
-            <div className="hidden md:flex items-center gap-8">
-              <a href="#" className="text-sm font-medium hover:text-primary transition-colors">
-                Dashboard
-              </a>
-              <a href="#" className="text-sm font-medium hover:text-primary transition-colors">
-                Inventory
-              </a>
-              <a href="#" className="text-sm font-medium hover:text-primary transition-colors">
-                Wholesalers
-              </a>
-              <a href="#" className="text-sm font-medium hover:text-primary transition-colors">
-                Analytics
-              </a>
-            </div>
-          )}
 
           {/* Actions */}
           <div className="flex items-center gap-4">
