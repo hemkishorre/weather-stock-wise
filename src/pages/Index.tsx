@@ -4,6 +4,7 @@ import WeatherCard from "@/components/WeatherCard";
 import InventorySuggestions from "@/components/InventorySuggestions";
 import WholesalerMarketplace from "@/components/WholesalerMarketplace";
 import VendorInventory from "@/components/VendorInventory";
+import WholesalerProducts from "@/components/WholesalerProducts";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
@@ -73,11 +74,11 @@ const Index = () => {
               <div className="max-w-4xl mx-auto text-center space-y-4">
                 <h1 className="text-4xl font-bold">Wholesaler Dashboard</h1>
                 <p className="text-xl text-muted-foreground">
-                  View vendor inventory needs and manage your products
+                  Manage your products and view vendor orders
                 </p>
               </div>
             </div>
-            <WholesalerMarketplace />
+            <WholesalerProducts />
           </>
         ) : null}
       </main>

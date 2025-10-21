@@ -71,6 +71,56 @@ export type Database = {
         }
         Relationships: []
       }
+      vendor_orders: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          product_id: string
+          quantity: number
+          status: string
+          total_price: number
+          unit_price: number
+          updated_at: string
+          vendor_id: string
+          wholesaler_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          product_id: string
+          quantity: number
+          status?: string
+          total_price: number
+          unit_price: number
+          updated_at?: string
+          vendor_id: string
+          wholesaler_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          product_id?: string
+          quantity?: number
+          status?: string
+          total_price?: number
+          unit_price?: number
+          updated_at?: string
+          vendor_id?: string
+          wholesaler_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_orders_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "wholesaler_products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vendor_preferences: {
         Row: {
           created_at: string
@@ -92,6 +142,42 @@ export type Database = {
           location?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      wholesaler_products: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          in_stock: boolean
+          price: number
+          product_name: string
+          unit: string
+          updated_at: string
+          wholesaler_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          in_stock?: boolean
+          price: number
+          product_name: string
+          unit: string
+          updated_at?: string
+          wholesaler_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          in_stock?: boolean
+          price?: number
+          product_name?: string
+          unit?: string
+          updated_at?: string
+          wholesaler_id?: string
         }
         Relationships: []
       }

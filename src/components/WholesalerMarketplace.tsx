@@ -1,57 +1,107 @@
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MapPin, Clock, Star, Package } from "lucide-react";
+import { Package, ShoppingCart, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
-interface Wholesaler {
-  name: string;
-  distance: number;
-  rating: number;
-  deliveryTime: string;
-  items: { name: string; price: number; inStock: boolean }[];
-  verified: boolean;
+interface Product {
+  id: string;
+  product_name: string;
+  price: number;
+  unit: string;
+  in_stock: boolean;
+  description: string | null;
+  wholesaler_id: string;
 }
 
 const WholesalerMarketplace = () => {
-  // Mock data - in production this would come from an API
-  const wholesalers: Wholesaler[] = [
-    {
-      name: "Fresh Produce Co.",
-      distance: 2.3,
-      rating: 4.8,
-      deliveryTime: "30-45 min",
-      items: [
-        { name: "Ice Cream (box)", price: 45, inStock: true },
-        { name: "Fresh Salads (kg)", price: 120, inStock: true },
-        { name: "Beverages (case)", price: 85, inStock: true },
-      ],
-      verified: true,
-    },
-    {
-      name: "City Food Suppliers",
-      distance: 3.7,
-      rating: 4.6,
-      deliveryTime: "45-60 min",
-      items: [
-        { name: "Ice Cream (box)", price: 42, inStock: true },
-        { name: "Fresh Salads (kg)", price: 115, inStock: false },
-        { name: "Soups (liter)", price: 65, inStock: true },
-      ],
-      verified: true,
-    },
-    {
-      name: "Quality Wholesale Market",
-      distance: 5.1,
-      rating: 4.7,
-      deliveryTime: "60-75 min",
-      items: [
-        { name: "Ice Cream (box)", price: 48, inStock: true },
-        { name: "Hot Beverages (kg)", price: 95, inStock: true },
-        { name: "Fresh Salads (kg)", price: 125, inStock: true },
-      ],
-      verified: false,
-    },
-  ];
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [quantity, setQuantity] = useState<string>("");
+  const [notes, setNotes] = useState<string>("");
+  const [isOrdering, setIsOrdering] = useState(false);
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
+  const fetchProducts = async () => {
+    try {
+      setIsLoading(true);
+      const { data, error } = await supabase
+        .from('wholesaler_products')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setProducts(data || []);
+    } catch (error) {
+      console.error('Error fetching products:', error);
+      toast.error("Failed to load products");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleOrder = async () => {
+    if (!selectedProduct || !quantity) {
+      toast.error("Please enter quantity");
+      return;
+    }
+
+    setIsOrdering(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast.error("Please sign in to place orders");
+        return;
+      }
+
+      const quantityNum = parseFloat(quantity);
+      const totalPrice = quantityNum * selectedProduct.price;
+
+      const { error } = await supabase
+        .from('vendor_orders')
+        .insert({
+          vendor_id: user.id,
+          wholesaler_id: selectedProduct.wholesaler_id,
+          product_id: selectedProduct.id,
+          quantity: quantityNum,
+          unit_price: selectedProduct.price,
+          total_price: totalPrice,
+          notes: notes || null,
+        });
+
+      if (error) throw error;
+
+      toast.success("Order placed successfully!");
+      setSelectedProduct(null);
+      setQuantity("");
+      setNotes("");
+    } catch (error) {
+      console.error('Error placing order:', error);
+      toast.error("Failed to place order");
+    } finally {
+      setIsOrdering(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <section className="container mx-auto px-4 py-16">
+        <div className="max-w-6xl mx-auto flex items-center justify-center py-20">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="container mx-auto px-4 py-16">
@@ -59,74 +109,113 @@ const WholesalerMarketplace = () => {
         <div className="text-center space-y-2">
           <h2 className="text-3xl md:text-4xl font-bold">Wholesaler Marketplace</h2>
           <p className="text-muted-foreground">
-            Compare prices and delivery times from nearby suppliers
+            Browse and order products from wholesalers
           </p>
         </div>
 
-        <div className="space-y-6">
-          {wholesalers.map((wholesaler, index) => (
-            <Card key={index}>
-              <CardHeader>
-                <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <CardTitle className="text-2xl">{wholesaler.name}</CardTitle>
-                      {wholesaler.verified && (
-                        <Badge className="bg-secondary/10 text-secondary border-secondary/20">
-                          Verified
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                      <div className="flex items-center gap-1">
-                        <MapPin className="w-4 h-4" />
-                        <span>{wholesaler.distance} km away</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Clock className="w-4 h-4" />
-                        <span>{wholesaler.deliveryTime}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Star className="w-4 h-4 fill-current text-accent" />
-                        <span className="font-medium">{wholesaler.rating}</span>
-                      </div>
-                    </div>
+        {products.length === 0 ? (
+          <Card>
+            <CardContent className="py-12 text-center">
+              <Package className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+              <p className="text-muted-foreground">No products available at the moment</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {products.map((product) => (
+              <Card key={product.id}>
+                <CardHeader>
+                  <CardTitle className="text-xl">{product.product_name}</CardTitle>
+                  {product.description && (
+                    <p className="text-sm text-muted-foreground">{product.description}</p>
+                  )}
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-3xl font-bold text-primary">₹{product.price}</span>
+                    <span className="text-muted-foreground">/ {product.unit}</span>
                   </div>
-                  <Button variant="secondary" size="lg">
-                    Contact Supplier
+                  
+                  <div className="flex items-center gap-2">
+                    <Badge variant={product.in_stock ? "secondary" : "outline"}>
+                      {product.in_stock ? "In Stock" : "Out of Stock"}
+                    </Badge>
+                  </div>
+
+                  <Button 
+                    className="w-full" 
+                    onClick={() => setSelectedProduct(product)}
+                    disabled={!product.in_stock}
+                  >
+                    <ShoppingCart className="w-4 h-4 mr-2" />
+                    Order Now
                   </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+
+        <Dialog open={!!selectedProduct} onOpenChange={() => setSelectedProduct(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Place Order</DialogTitle>
+              <DialogDescription>
+                Order {selectedProduct?.product_name}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>Price per {selectedProduct?.unit}</Label>
+                <p className="text-2xl font-bold text-primary">₹{selectedProduct?.price}</p>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="quantity">Quantity ({selectedProduct?.unit})</Label>
+                <Input
+                  id="quantity"
+                  type="number"
+                  placeholder="Enter quantity"
+                  value={quantity}
+                  onChange={(e) => setQuantity(e.target.value)}
+                  min="1"
+                  step="0.01"
+                />
+              </div>
+              {quantity && (
+                <div className="space-y-2">
+                  <Label>Total Amount</Label>
+                  <p className="text-2xl font-bold text-secondary">
+                    ₹{(parseFloat(quantity) * (selectedProduct?.price || 0)).toFixed(2)}
+                  </p>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2 text-sm font-medium">
-                    <Package className="w-4 h-4 text-muted-foreground" />
-                    <span>Available Products</span>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {wholesaler.items.map((item, itemIndex) => (
-                      <div
-                        key={itemIndex}
-                        className="flex items-center justify-between p-4 rounded-lg border bg-card/50 hover:bg-card transition-colors"
-                      >
-                        <div className="space-y-1">
-                          <p className="font-medium">{item.name}</p>
-                          <p className="text-2xl font-bold text-primary">₹{item.price}</p>
-                        </div>
-                        <Badge
-                          variant={item.inStock ? "secondary" : "outline"}
-                          className={item.inStock ? "" : "opacity-50"}
-                        >
-                          {item.inStock ? "In Stock" : "Out"}
-                        </Badge>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+              )}
+              <div className="space-y-2">
+                <Label htmlFor="notes">Notes (Optional)</Label>
+                <Input
+                  id="notes"
+                  placeholder="Add any special instructions"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setSelectedProduct(null)}>
+                Cancel
+              </Button>
+              <Button onClick={handleOrder} disabled={isOrdering}>
+                {isOrdering ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Placing Order...
+                  </>
+                ) : (
+                  "Place Order"
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </section>
   );
