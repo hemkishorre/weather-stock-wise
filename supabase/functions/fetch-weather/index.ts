@@ -20,19 +20,19 @@ serve(async (req) => {
 
     console.log('Fetching weather for location:', location);
 
-    // Fetch current weather and 3-day forecast from WeatherAPI.com
+    // Fetch weather forecast from Tomorrow.io API
     const response = await fetch(
-      `https://api.weatherapi.com/v1/forecast.json?key=${apiKey}&q=${location}&days=3&aqi=no`,
+      `https://api.tomorrow.io/v4/weather/forecast?location=${encodeURIComponent(location)}&apikey=${apiKey}`,
       {
         headers: {
-          'Content-Type': 'application/json',
+          'Accept': 'application/json',
         },
       }
     );
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Weather API error:', response.status, errorText);
+      console.error('Tomorrow.io API error:', response.status, errorText);
       throw new Error(`Weather API error: ${response.status}`);
     }
 
@@ -40,20 +40,31 @@ serve(async (req) => {
     console.log('Weather data fetched successfully');
 
     // Transform the data to match our frontend format
-    const forecast = data.forecast.forecastday.map((day: any) => ({
-      date: day.date,
-      temp: Math.round(day.day.avgtemp_c),
-      condition: day.day.condition.text.toLowerCase().includes('rain') ? 'rainy' :
-                 day.day.condition.text.toLowerCase().includes('cloud') ? 'cloudy' : 'sunny',
-      humidity: day.day.avghumidity,
-      windSpeed: Math.round(day.day.maxwind_kph),
-      precipitation: day.day.daily_chance_of_rain,
-      icon: day.day.condition.icon,
-    }));
+    const forecast = data.timelines.daily.slice(0, 3).map((day: any) => {
+      const values = day.values;
+      const weatherCode = values.weatherCodeMax || values.weatherCodeMin || 0;
+      
+      // Map Tomorrow.io weather codes to conditions
+      let condition = 'sunny';
+      if (weatherCode >= 4000 && weatherCode < 5000) {
+        condition = 'rainy';
+      } else if (weatherCode >= 1000 && weatherCode < 2000) {
+        condition = 'cloudy';
+      }
+      
+      return {
+        date: day.time.split('T')[0],
+        temp: Math.round(values.temperatureAvg),
+        condition,
+        humidity: Math.round(values.humidityAvg),
+        windSpeed: Math.round(values.windSpeedAvg),
+        precipitation: Math.round(values.precipitationProbabilityAvg || 0),
+      };
+    });
 
     return new Response(
       JSON.stringify({
-        location: data.location.name,
+        location: location,
         forecast,
       }),
       {
