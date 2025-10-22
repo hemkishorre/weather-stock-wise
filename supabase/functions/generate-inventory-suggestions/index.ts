@@ -15,12 +15,12 @@ serve(async (req) => {
   try {
     const { location, vendorId } = await req.json();
     
-    const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY');
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     const WEATHER_API_KEY = Deno.env.get('WEATHER_API_KEY');
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
-    if (!OPENAI_API_KEY || !WEATHER_API_KEY || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+    if (!LOVABLE_API_KEY || !WEATHER_API_KEY || !SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
       throw new Error('Required environment variables are not set');
     }
 
@@ -103,17 +103,17 @@ For each suggestion, provide:
 
 Return ONLY a JSON array of suggestions, no other text.`;
 
-    console.log('Calling OpenAI API...');
+    console.log('Calling Lovable AI...');
 
-    // Call OpenAI API
-    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
+    // Call Lovable AI Gateway
+    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'google/gemini-2.5-flash',
         messages: [
           { 
             role: 'system', 
@@ -121,21 +121,20 @@ Return ONLY a JSON array of suggestions, no other text.`;
           },
           { role: 'user', content: prompt }
         ],
-        temperature: 0.7,
         max_tokens: 1000,
       }),
     });
 
-    if (!openaiResponse.ok) {
-      const errorText = await openaiResponse.text();
-      console.error('OpenAI API error:', openaiResponse.status, errorText);
-      throw new Error(`OpenAI API error: ${openaiResponse.status}`);
+    if (!aiResponse.ok) {
+      const errorText = await aiResponse.text();
+      console.error('Lovable AI error:', aiResponse.status, errorText);
+      throw new Error(`Lovable AI error: ${aiResponse.status}`);
     }
 
-    const openaiData = await openaiResponse.json();
-    const suggestionsText = openaiData.choices[0].message.content.trim();
+    const aiData = await aiResponse.json();
+    const suggestionsText = aiData.choices[0].message.content.trim();
     
-    console.log('OpenAI response:', suggestionsText);
+    console.log('Lovable AI response:', suggestionsText);
 
     // Parse the JSON response
     let suggestions;
@@ -144,7 +143,7 @@ Return ONLY a JSON array of suggestions, no other text.`;
       const cleanedText = suggestionsText.replace(/```json\n?|\n?```/g, '').trim();
       suggestions = JSON.parse(cleanedText);
     } catch (parseError) {
-      console.error('Error parsing OpenAI response:', parseError);
+      console.error('Error parsing AI response:', parseError);
       throw new Error('Failed to parse AI suggestions');
     }
 
