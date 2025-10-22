@@ -19,8 +19,14 @@ interface Product {
   wholesaler_id: string;
 }
 
+interface WholesalerWithProducts {
+  wholesaler_id: string;
+  wholesaler_email: string;
+  products: Product[];
+}
+
 const WholesalerMarketplace = () => {
-  const [products, setProducts] = useState<Product[]>([]);
+  const [wholesalers, setWholesalers] = useState<WholesalerWithProducts[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [quantity, setQuantity] = useState<string>("");
@@ -34,13 +40,29 @@ const WholesalerMarketplace = () => {
   const fetchProducts = async () => {
     try {
       setIsLoading(true);
-      const { data, error } = await supabase
+      
+      // Fetch products
+      const { data: products, error: productsError } = await supabase
         .from('wholesaler_products')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setProducts(data || []);
+      if (productsError) throw productsError;
+
+      // Get unique wholesaler IDs
+      const wholesalerIds = [...new Set(products?.map(p => p.wholesaler_id) || [])];
+      
+      // Group products by wholesaler
+      const groupedWholesalers: WholesalerWithProducts[] = wholesalerIds.map((wholesalerId, index) => {
+        const wholesalerProducts = products?.filter(p => p.wholesaler_id === wholesalerId) || [];
+        return {
+          wholesaler_id: wholesalerId,
+          wholesaler_email: `Wholesaler ${index + 1}`,
+          products: wholesalerProducts
+        };
+      });
+
+      setWholesalers(groupedWholesalers);
     } catch (error) {
       console.error('Error fetching products:', error);
       toast.error("Failed to load products");
@@ -105,7 +127,7 @@ const WholesalerMarketplace = () => {
 
   return (
     <section className="container mx-auto px-4 py-16">
-      <div className="max-w-6xl mx-auto space-y-6">
+      <div className="max-w-6xl mx-auto space-y-8">
         <div className="text-center space-y-2">
           <h2 className="text-3xl md:text-4xl font-bold">Wholesaler Marketplace</h2>
           <p className="text-muted-foreground">
@@ -113,7 +135,7 @@ const WholesalerMarketplace = () => {
           </p>
         </div>
 
-        {products.length === 0 ? (
+        {wholesalers.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center">
               <Package className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
@@ -121,35 +143,51 @@ const WholesalerMarketplace = () => {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {products.map((product) => (
-              <Card key={product.id}>
-                <CardHeader>
-                  <CardTitle className="text-xl">{product.product_name}</CardTitle>
-                  {product.description && (
-                    <p className="text-sm text-muted-foreground">{product.description}</p>
-                  )}
+          <div className="space-y-8">
+            {wholesalers.map((wholesaler) => (
+              <Card key={wholesaler.wholesaler_id} className="overflow-hidden">
+                <CardHeader className="bg-muted/50">
+                  <CardTitle className="text-2xl">
+                    {wholesaler.wholesaler_email}
+                  </CardTitle>
+                  <p className="text-sm text-muted-foreground">
+                    {wholesaler.products.length} product{wholesaler.products.length !== 1 ? 's' : ''} available
+                  </p>
                 </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-3xl font-bold text-primary">₹{product.price}</span>
-                    <span className="text-muted-foreground">/ {product.unit}</span>
-                  </div>
-                  
-                  <div className="flex items-center gap-2">
-                    <Badge variant={product.in_stock ? "secondary" : "outline"}>
-                      {product.in_stock ? "In Stock" : "Out of Stock"}
-                    </Badge>
-                  </div>
+                <CardContent className="pt-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {wholesaler.products.map((product) => (
+                      <Card key={product.id} className="shadow-sm">
+                        <CardHeader>
+                          <CardTitle className="text-lg">{product.product_name}</CardTitle>
+                          {product.description && (
+                            <p className="text-sm text-muted-foreground">{product.description}</p>
+                          )}
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-2xl font-bold text-primary">₹{product.price}</span>
+                            <span className="text-muted-foreground">/ {product.unit}</span>
+                          </div>
+                          
+                          <div className="flex items-center gap-2">
+                            <Badge variant={product.in_stock ? "secondary" : "outline"}>
+                              {product.in_stock ? "In Stock" : "Out of Stock"}
+                            </Badge>
+                          </div>
 
-                  <Button 
-                    className="w-full" 
-                    onClick={() => setSelectedProduct(product)}
-                    disabled={!product.in_stock}
-                  >
-                    <ShoppingCart className="w-4 h-4 mr-2" />
-                    Order Now
-                  </Button>
+                          <Button 
+                            className="w-full" 
+                            onClick={() => setSelectedProduct(product)}
+                            disabled={!product.in_stock}
+                          >
+                            <ShoppingCart className="w-4 h-4 mr-2" />
+                            Order Now
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
                 </CardContent>
               </Card>
             ))}

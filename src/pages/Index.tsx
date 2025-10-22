@@ -57,9 +57,6 @@ const Index = () => {
         {!user ? (
           <>
             <Hero />
-            <WeatherCard />
-            <InventorySuggestions />
-            <WholesalerMarketplace />
           </>
         ) : userRole === 'vendor' ? (
           <>

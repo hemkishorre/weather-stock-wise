@@ -1,11 +1,11 @@
 import { Button } from "@/components/ui/button";
-import { Bell, Menu, LogOut } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Menu, LogOut } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useEffect, useState } from "react";
 import { User } from "@supabase/supabase-js";
 import { toast } from "sonner";
+import NotificationDropdown from "./NotificationDropdown";
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -50,12 +50,7 @@ const Navbar = () => {
           <div className="flex items-center gap-4">
             {user ? (
               <>
-                <Button variant="ghost" size="icon" className="relative">
-                  <Bell className="w-5 h-5" />
-                  <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-destructive">
-                    3
-                  </Badge>
-                </Button>
+                <NotificationDropdown />
                 
                 <div className="hidden md:flex items-center gap-2">
                   <span className="text-sm text-muted-foreground">
