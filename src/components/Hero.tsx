@@ -2,22 +2,16 @@ import { Button } from "@/components/ui/button";
 import { Cloud, TrendingUp, Package, Bell } from "lucide-react";
 import heroBg from "@/assets/hero-bg.jpg";
 import { useNavigate } from "react-router-dom";
-
 const Hero = () => {
   const navigate = useNavigate();
-
-  return (
-    <section className="relative min-h-[90vh] flex items-center overflow-hidden">
+  return <section className="relative min-h-[90vh] flex items-center overflow-hidden">
       {/* Background with gradient mesh */}
       <div className="absolute inset-0 gradient-mesh opacity-60" />
-      <div 
-        className="absolute inset-0 opacity-10"
-        style={{
-          backgroundImage: `url(${heroBg})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-        }}
-      />
+      <div className="absolute inset-0 opacity-10" style={{
+      backgroundImage: `url(${heroBg})`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center'
+    }} />
       
       <div className="container relative z-10 mx-auto px-4 py-20">
         <div className="max-w-4xl mx-auto text-center space-y-8">
@@ -31,7 +25,7 @@ const Hero = () => {
           <h1 className="text-5xl md:text-7xl font-bold tracking-tight">
             Optimize Your Supply
             <br />
-            <span className="gradient-hero bg-clip-text text-transparent">
+            <span className="gradient-hero bg-clip-text text-slate-950">
               With Weather Intelligence
             </span>
           </h1>
@@ -47,7 +41,10 @@ const Hero = () => {
             <Button variant="hero" size="lg" className="min-w-[200px]" onClick={() => navigate("/auth")}>
               Get Started Free
             </Button>
-            <Button variant="outline" size="lg" className="min-w-[200px]" onClick={() => window.scrollTo({ top: 800, behavior: 'smooth' })}>
+            <Button variant="outline" size="lg" className="min-w-[200px]" onClick={() => window.scrollTo({
+            top: 800,
+            behavior: 'smooth'
+          })}>
               View Demo
             </Button>
           </div>
@@ -86,8 +83,6 @@ const Hero = () => {
           </div>
         </div>
       </div>
-    </section>
-  );
+    </section>;
 };
-
 export default Hero;
