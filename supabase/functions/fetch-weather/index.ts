@@ -39,8 +39,8 @@ serve(async (req) => {
     const data = await response.json();
     console.log('Weather data fetched successfully');
 
-    // Transform the data to match our frontend format
-    const forecast = data.timelines.daily.slice(0, 3).map((day: any) => {
+    // Transform the data to match our frontend format (7 days)
+    const forecast = data.timelines.daily.slice(0, 7).map((day: any) => {
       const values = day.values;
       const weatherCode = values.weatherCodeMax || values.weatherCodeMin || 0;
       

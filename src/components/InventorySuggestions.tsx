@@ -1,7 +1,10 @@
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, TrendingDown, Minus, Sparkles } from "lucide-react";
+import { TrendingUp, TrendingDown, Minus, Sparkles, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 
 interface Suggestion {
   item: string;
@@ -13,41 +16,66 @@ interface Suggestion {
 }
 
 const InventorySuggestions = () => {
-  // Mock data - in production this would come from AI/API
-  const suggestions: Suggestion[] = [
-    {
-      item: "Ice Cream",
-      currentStock: 50,
-      suggested: 120,
-      reason: "Hot sunny weather expected - high demand predicted",
-      trend: "up",
-      priority: "high",
-    },
-    {
-      item: "Hot Beverages",
-      currentStock: 100,
-      suggested: 60,
-      reason: "Warm weather - reduced demand for hot drinks",
-      trend: "down",
-      priority: "medium",
-    },
-    {
-      item: "Fresh Salads",
-      currentStock: 40,
-      suggested: 85,
-      reason: "Sunny weather increases fresh food preference",
-      trend: "up",
-      priority: "high",
-    },
-    {
-      item: "Soups",
-      currentStock: 80,
-      suggested: 80,
-      reason: "Stable demand expected",
-      trend: "stable",
-      priority: "low",
-    },
-  ];
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    fetchSuggestions();
+  }, []);
+
+  const fetchSuggestions = async () => {
+    try {
+      setLoading(true);
+      
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        throw new Error('User not authenticated');
+      }
+
+      // Get user location
+      const { data: preferences } = await supabase
+        .from('vendor_preferences')
+        .select('location')
+        .eq('user_id', user.id)
+        .single();
+
+      const location = preferences?.location || 'London';
+
+      // Call edge function to generate suggestions
+      const { data, error } = await supabase.functions.invoke('generate-inventory-suggestions', {
+        body: { 
+          location,
+          vendorId: user.id 
+        }
+      });
+
+      if (error) throw error;
+
+      setSuggestions(data.suggestions || []);
+    } catch (error) {
+      console.error('Error fetching suggestions:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load inventory suggestions",
+        variant: "destructive",
+      });
+      // Set fallback suggestions on error
+      setSuggestions([
+        {
+          item: "Ice Cream",
+          currentStock: 50,
+          suggested: 120,
+          reason: "Hot weather expected - high demand",
+          trend: "up",
+          priority: "high",
+        },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const getTrendIcon = (trend: string) => {
     switch (trend) {
@@ -81,6 +109,16 @@ const InventorySuggestions = () => {
         return "bg-muted text-muted-foreground border-muted";
     }
   };
+
+  if (loading) {
+    return (
+      <section className="container mx-auto px-4 py-16 bg-muted/30">
+        <div className="max-w-6xl mx-auto flex items-center justify-center">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="container mx-auto px-4 py-16 bg-muted/30">
